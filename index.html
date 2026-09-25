@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PMR Dino Runner - Seleksi Tim Inti</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      height: 600px;
+      background: #87ceeb;
+      border: 4px solid #ffffff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.6);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .hud-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(6px);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 14px;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #f8fafc;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Overlays */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 900;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    p {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+      color: #cbd5e1;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #fff;
+      border: none;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 800;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Quiz Modal */
+    #quiz-modal {
+      background: #1e293b;
+      border: 2px solid #38bdf8;
+      border-radius: 18px;
+      width: 100%;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    #quiz-question {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .option-btn {
+      background: #334155;
+      color: #f8fafc;
+      border: 1.5px solid #475569;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+
+    .option-btn:active {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+
+    /* Poster Screen */
+    #winner-screen {
+      overflow-y: auto;
+      background: #0f172a;
+      padding: 15px;
+    }
+
+    .poster-container {
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      color: #0f172a;
+      border-radius: 16px;
+      padding: 18px;
+      width: 100%;
+      border: 3px solid #0284c7;
+      margin-bottom: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .poster-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #15803d;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .poster-subtitle {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0369a1;
+      margin-bottom: 12px;
+      background: #ffffff;
+      padding: 3px 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .winner-list {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      text-align: left;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .winner-item {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      padding: 5px 0;
+      border-bottom: 1px dashed #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .winner-item:last-child {
+      border-bottom: none;
+    }
+
+    #poster-img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-card">
+        NYAWA: <span id="lives-display">❤️❤️❤️</span>
+      </div>
+      <div class="hud-card">
+        LANGKAH: <span id="steps-display">0</span> / 200
+      </div>
+    </div>
+
+    <!-- Start Overlay -->
+    <div id="start-screen" class="overlay">
+      <h1 style="color: #4ade80;">PMR DINO RUNNER</h1>
+      <p>Bantu Dino PMR melewati rintangan!<br>Jawab kuis setiap 20 langkah & capai 200 langkah untuk melihat pengumuman.</p>
+      <button class="btn" onclick="startGame()">MULAI LARI!</button>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameover-screen" class="overlay hidden">
+      <h1 style="color: #f87171;">GAME OVER</h1>
+      <p id="gameover-msg">Nyawa kamu telah habis!</p>
+      <button class="btn" onclick="restartGame()">COBA LAGI</button>
+    </div>
+
+    <!-- Quiz Overlay -->
+    <div id="quiz-screen" class="overlay hidden">
+      <div id="quiz-modal">
+        <h2 style="color:#38bdf8; margin-bottom:12px; font-size:16px;">KUIS PMR (<span id="quiz-step-num">20</span>/200 Langkah)</h2>
+        <div id="quiz-question">Pertanyaan...</div>
+        <div id="quiz-options" class="options-grid"></div>
+      </div>
+    </div>
+
+    <!-- Winner Overlay -->
+    <div id="winner-screen" class="overlay hidden">
+      <h1 style="color: #facc15; font-size: 22px; margin-bottom: 8px;">🎉 SELAMAT! 🎉</h1>
+
+      <img id="poster-img" src="poster.jpg" alt="Poster Pengumuman" onerror="this.style.display='none'; document.getElementById('custom-poster').style.display='block';">
+
+      <div id="custom-poster" class="poster-container">
+        <div class="poster-title">PENGUMUMAN SELEKSI TIM INTI</div>
+        <div class="poster-subtitle">DAFTAR PESERTA YANG LULUS</div>
+        <div class="winner-list">
+          <div class="winner-item"><span>1. KHOLIFATUL BARIYAH</span> <span>9E - 27</span></div>
+          <div class="winner-item"><span>2. NUR AINI</span> <span>9E - 27</span></div>
+          <div class="winner-item"><span>3. LA ODE MUHAMMAD RIDWAN NUR</span> <span>8A - 26</span></div>
+          <div class="winner-item"><span>4. AGUSTINA RAMADHANI</span> <span>9B - 25</span></div>
+          <div class="winner-item"><span>5. MUHAMMAD RIZQI</span> <span>8D - 25</span></div>
+          <div class="winner-item"><span>6. FACHRI ADITYA</span> <span>7C - 24</span></div>
+          <div class="winner-item"><span>7. RIZKY APRILIA UZMA</span> <span>9F - 24</span></div>
+          <div class="winner-item"><span>8. RAIHAN</span> <span>9E - 23</span></div>
+          <div class="winner-item"><span>9. AQIFA NAILA</span> <span>8A - 22</span></div>
+          <div class="winner-item"><span>10. NUR ZAHRA RIHANI</span> <span>7E - 22</span></div>
+          <div class="winner-item"><span>11. NAURA FAEKAKALSUM</span> <span>9C - 21</span></div>
+          <div class="winner-item"><span>12. FATIMATUZZAHRO</span> <span>8B - 21</span></div>
+        </div>
+      </div>
+
+      <button class="btn" onclick="restartGame()">MAIN LAGI</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = 400;
+    canvas.height = 500;
+
+    let gameRunning = false;
+    let gameSpeed = 3.8; // Kecepatan lari sedang (pas)
+    let steps = 0;
+    let stepCounter = 0;
+    let lives = 3;
+    let invulnerableTimer = 0;
+    let nextQuizStep = 20;
+    let animationFrameId;
+
+    const player = {
+      x: 50,
+      y: 350,
+      width: 48,
+      height: 52,
+      vy: 0,
+      gravity: 0.75,
+      jumpPower: -13,
+      grounded: true
+    };
+
+    let obstacles = [];
+    let obstacleTimer = 0;
+
+    const questions = [
+      { q: "Apa kepanjangan dari PMR?", options: ["Palang Merah Remaja", "Pemuda Merah Relawan", "Pertolongan Merah Remaja"], ans: 0 },
+      { q: "Prinsip utama gerakan Palang Merah adalah...", options: ["Kemandirian", "Kemanusiaan", "Kekuasaan"], ans: 1 },
+      { q: "Nomor telepon darurat Ambulans di Indonesia adalah...", options: ["110", "118 / 119", "113"], ans: 1 },
+      { q: "Langkah pertama saat mengobati luka lecet adalah...", options: ["Dibalut ketat", "Dicuci air bersih", "Diberi es batu"], ans: 1 },
+      { q: "Warna khas dari lambang Palang Merah adalah...", options: ["Merah di dasar putih", "Putih di dasar merah", "Kuning"], ans: 0 },
+      { q: "Cairan antiseptik untuk pembersih luka luar adalah...", options: ["Paracetamol", "Povidone Iodine", "Oralit"], ans: 1 },
+      { q: "Sikap utama seorang anggota PMR adalah...", options: ["Suka menolong", "Acuh tak acuh", "Egois"], ans: 0 },
+      { q: "PMR tingkat SMP biasa disebut...", options: ["PMR Mula", "PMR Madya", "PMR Wira"], ans: 1 },
+      { q: "Alat untuk menopang & memfiksasi tulang patah adalah...", options: ["Tensi", "Bidai (Spalk)", "Termometer"], ans: 1 }
+    ];
+
+    function handleJump() {
+      if (!gameRunning) return;
+      if (player.grounded) {
+        player.vy = player.jumpPower;
+        player.grounded = false;
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        handleJump();
+      }
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handleJump();
+    }, {passive: false});
+
+    canvas.addEventListener('mousedown', handleJump);
+
+    function startGame() {
+      document.getElementById('start-screen').classList.add('hidden');
+      restartGame();
+    }
+
+    function restartGame() {
+      document.getElementById('gameover-screen').classList.add('hidden');
+      document.getElementById('winner-screen').classList.add('hidden');
+      document.getElementById('quiz-screen').classList.add('hidden');
+
+      steps = 0;
+      stepCounter = 0;
+      lives = 3;
+      nextQuizStep = 20;
+      invulnerableTimer = 0;
+      obstacles = [];
+      obstacleTimer = 0;
+      
+      player.y = 350;
+      player.vy = 0;
+      player.grounded = true;
+
+      updateHUD();
+      gameRunning = true;
+      cancelAnimationFrame(animationFrameId);
+      gameLoop();
+    }
+
+    function updateHUD() {
+      document.getElementById('steps-display').innerText = steps;
+      let hearts = '';
+      for (let i = 0; i < lives; i++) hearts += '❤️';
+      document.getElementById('lives-display').innerText = hearts;
+    }
+
+    function spawnObstacle() {
+      const types = [
+        { width: 38, height: 38, isP3K: true },
+        { width: 32, height: 42, isP3K: false }
+      ];
+      const selected = types[Math.floor(Math.random() * types.length)];
+      obstacles.push({
+        x: canvas.width + 20,
+        y: 400 - selected.height,
+        width: selected.width,
+        height: selected.height,
+        isP3K: selected.isP3K
+      });
+    }
+
+    function triggerQuiz() {
+      gameRunning = false;
+      const qIndex = Math.min(Math.floor((steps / 20) - 1), questions.length - 1);
+      const qData = questions[qIndex] || questions[0];
+
+      document.getElementById('quiz-step-num').innerText = steps;
+      document.getElementById('quiz-question').innerText = qData.q;
+      
+      const optionsContainer = document.getElementById('quiz-options');
+      optionsContainer.innerHTML = '';
+
+      qData.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = `${String.fromCharCode(65 + idx)}. ${opt}`;
+        btn.onclick = () => answerQuiz(idx === qData.ans);
+        optionsContainer.appendChild(btn);
+      });
+
+      document.getElementById('quiz-screen').classList.remove('hidden');
+    }
+
+    function answerQuiz(isCorrect) {
+      document.getElementById('quiz-screen').classList.add('hidden');
+      if (isCorrect) {
+        nextQuizStep += 20;
+        gameRunning = true;
+        gameLoop();
+      } else {
+        lives--;
+        updateHUD();
+        if (lives <= 0) {
+          triggerGameOver("Jawaban kuis salah & nyawa habis!");
+        } else {
+          nextQuizStep += 20;
+          gameRunning = true;
+          gameLoop();
+        }
+      }
+    }
+
+    function triggerGameOver(reason) {
+      gameRunning = false;
+      document.getElementById('gameover-msg').innerText = reason || "Nyawa kamu telah habis.";
+      document.getElementById('gameover-screen').classList.remove('hidden');
+    }
+
+    function triggerWin() {
+      gameRunning = false;
+      document.getElementById('winner-screen').classList.remove('hidden');
+    }
+
+    function update() {
+      stepCounter += gameSpeed * 0.025;
+      if (stepCounter >= 1) {
+        steps += Math.floor(stepCounter);
+        stepCounter %= 1;
+        updateHUD();
+
+        if (steps >= 200) {
+          steps = 200;
+          updateHUD();
+          triggerWin();
+          return;
+        }
+
+        if (steps >= nextQuizStep && steps < 200) {
+          steps = nextQuizStep;
+          updateHUD();
+          triggerQuiz();
+          return;
+        }
+      }
+
+      player.vy += player.gravity;
+      player.y += player.vy;
+
+      if (player.y >= 350) {
+        player.y = 350;
+        player.vy = 0;
+        player.grounded = true;
+      }
+
+      if (invulnerableTimer > 0) invulnerableTimer--;
+
+      obstacleTimer++;
+      if (obstacleTimer > 75 + Math.random() * 50) {
+        spawnObstacle();
+        obstacleTimer = 0;
+      }
+
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        let obs = obstacles[i];
+        obs.x -= gameSpeed;
+
+        if (
+          invulnerableTimer === 0 &&
+          player.x < obs.x + obs.width &&
+          player.x + player.width > obs.x &&
+          player.y < obs.y + obs.height &&
+          player.y + player.height > obs.y
+        ) {
+          lives--;
+          updateHUD();
+          invulnerableTimer = 50;
+
+          if (lives <= 0) {
+            triggerGameOver("Kamu menabrak rintangan!");
+            return;
+          }
+        }
+
+        if (obs.x + obs.width < 0) {
+          obstacles.splice(i, 1);
+        }
+      }
+    }
+
+    function drawDinoPMR(x, y) {
+      // Body Dino
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.roundRect(x, y + 10, 36, 32, 10);
+      ctx.fill();
+
+      // Kepala Dino
+      ctx.beginPath();
+      ctx.roundRect(x + 10, y - 8, 30, 26, 8);
+      ctx.fill();
+
+      // Mata
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x + 30, y - 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(x + 31, y - 2, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Baju Seragam PMR (Putih)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 6, y + 16, 26, 18);
+
+      // Rompi / Logo Palang Merah
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(x + 16, y + 20, 6, 10);
+      ctx.fillRect(x + 14, y + 22, 10, 6);
+
+      // Tas Medis
+      ctx.fillStyle = '#b91c1c';
+      ctx.beginPath();
+      ctx.roundRect(x - 6, y + 20, 12, 14, 3);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - 3, y + 25, 6, 2);
+      ctx.fillRect(x - 1, y + 23, 2, 6);
+
+      // Kaki
+      ctx.fillStyle = '#b91c1c';
+      ctx.fillRect(x + 8, y + 40, 8, 12);
+      ctx.fillRect(x + 22, y + 40, 8, 12);
+    }
+
+    function drawP3KBox(x, y, w, h) {
+      // Kotak P3K Kayu Estetik
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(x + 6, y + 6, w - 12, h - 12);
+
+      // Silang Putih
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + w/2 - 2, y + 10, 4, h - 20);
+      ctx.fillRect(x + 10, y + h/2 - 2, w - 20, 4);
+    }
+
+    function drawBotolObat(x, y, w, h) {
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.roundRect(x, y + 8, w, h - 8, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fillRect(x + 4, y, w - 8, 8);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 4, y + 16, w - 8, 14);
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(x + w/2 - 1, y + 19, 2, 8);
+      ctx.fillRect(x + 7, y + 22, 8, 2);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Sky
+      let skyGradient = ctx.createLinearGradient(0, 0, 0, 350);
+      skyGradient.addColorStop(0, '#38bdf8');
+      skyGradient.addColorStop(1, '#bae6fd');
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, canvas.width, 400);
+
+      // Awan
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.beginPath();
+      ctx.arc(100, 80, 20, 0, Math.PI * 2);
+      ctx.arc(120, 75, 28, 0, Math.PI * 2);
+      ctx.arc(140, 80, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Rumput
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, 400, canvas.width, 100);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(0, 400, canvas.width, 8);
+
+      // Player
+      if (invulnerableTimer % 8 < 4) {
+        drawDinoPMR(player.x, player.y);
+      }
+
+      // Obstacles
+      obstacles.forEach(obs => {
+        if (obs.isP3K) {
+          drawP3KBox(obs.x, obs.y, obs.width, obs.height);
+        } else {
+          drawBotolObat(obs.x, obs.y, obs.width, obs.height);
+        }
+      });
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+      update();
+      draw();
+      animationFrameId = requestAnimationFrame(gameLoop);
+    }
+  </script>
+</body>
+</html>
